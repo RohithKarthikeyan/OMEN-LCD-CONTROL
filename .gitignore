@@ -1,0 +1,10 @@
+dist/
+dist-*/
+release/
+bin/
+obj/
+.vs/
+*.user
+*.suo
+*.log
+test-results.txt

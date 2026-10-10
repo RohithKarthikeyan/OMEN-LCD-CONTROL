@@ -1,0 +1,18 @@
+<Project ToolsVersion="15.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <PropertyGroup>
+    <OutputType>WinExe</OutputType>
+    <TargetFrameworkVersion>v4.8</TargetFrameworkVersion>
+    <AssemblyName>OmenLCDControl</AssemblyName>
+    <RootNamespace>OmenLCDControl</RootNamespace>
+    <OutputPath>dist\</OutputPath>
+    <PlatformTarget>x64</PlatformTarget>
+    <LangVersion>5</LangVersion>
+    <Optimize>true</Optimize>
+    <ApplicationManifest>app.manifest</ApplicationManifest>
+  </PropertyGroup>
+  <ItemGroup>
+    <Reference Include="System" /><Reference Include="System.Core" /><Reference Include="System.Drawing" /><Reference Include="System.Windows.Forms" /><Reference Include="System.Web.Extensions" /><Reference Include="System.Management" />
+    <Compile Include="src\*.cs" />
+  </ItemGroup>
+  <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
+</Project>

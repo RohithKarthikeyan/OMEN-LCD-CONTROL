@@ -1,0 +1,34 @@
+name: Release
+on:
+  push:
+    tags: ['v*']
+permissions:
+  contents: read
+jobs:
+  package:
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Build, test and package
+        shell: powershell
+        run: ./package.ps1
+      - uses: actions/upload-artifact@v4
+        with:
+          name: release-packages
+          path: release/*.zip
+          if-no-files-found: error
+  publish:
+    needs: package
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/download-artifact@v4
+        with:
+          name: release-packages
+          path: release
+      - name: Publish GitHub Release
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: gh release create "$GITHUB_REF_NAME" release/*.zip --verify-tag --generate-notes --title "Omen LCD control $GITHUB_REF_NAME"
