@@ -20,6 +20,7 @@ namespace OmenLCDControl {
         private readonly NumericUpDown slide;
         private readonly Label information;
         private readonly ListBox readings;
+        private readonly RadioButton customMedia;
         private readonly Timer timer=new Timer{Interval=100};
         private readonly Stopwatch clock=Stopwatch.StartNew();
         private bool applying;
@@ -29,13 +30,15 @@ namespace OmenLCDControl {
             Text="Omen LCD control - Dashboard designer";Font=new Font("Segoe UI",10);BackColor=Color.FromArgb(14,18,26);ForeColor=Color.White;
             ClientSize=new Size(1190,790);MinimumSize=new Size(1100,820);StartPosition=FormStartPosition.CenterParent;
             var header=new Panel{Dock=DockStyle.Top,Height=96,Padding=new Padding(18)};Controls.Add(header);
-            header.Controls.Add(new Label{Text="STATS STUDIO",Left=20,Top=12,Width=220,Height=35,Font=new Font("Segoe UI",20,FontStyle.Bold),ForeColor=Color.Turquoise});
+            header.Controls.Add(new Label{Text="DISPLAY MODE",Left=20,Top=12,Width=220,Height=35,Font=new Font("Segoe UI",20,FontStyle.Bold),ForeColor=Color.Turquoise});
             selectedLayout=config.Layout;
-            var layoutPanel=new FlowLayoutPanel{Left=254,Top=19,Width=300,Height=32};header.Controls.Add(layoutPanel);
+            var layoutPanel=new FlowLayoutPanel{Left=254,Top=19,Width=575,Height=32};header.Controls.Add(layoutPanel);
             foreach(string name in new[]{"Rings","Bars","Spotlight"}){var choice=new RadioButton{Text=name,AutoSize=true,Checked=name==selectedLayout,ForeColor=Color.White};choice.CheckedChanged+=(s,e)=>{if(choice.Checked)selectedLayout=choice.Text;};layoutChoices.Add(choice);layoutPanel.Controls.Add(choice);}
-            header.Controls.Add(new Label{Text="Seconds per slide",Left=565,Top=22,Width=140,Height=25});
-            slide=new NumericUpDown{Left=705,Top=19,Width=75,DecimalPlaces=2,Increment=.05m,Minimum=.5m,Maximum=1,Value=(decimal)config.SlideSeconds};header.Controls.Add(slide);
-            header.Controls.Add(new Label{Text="Assign your metrics below. Slots 1-4 draw graphs; slots 5-6 sit in the center / footer. Spotlight cycles all enabled slots.",Left=22,Top=62,Width=1140,Height=27,ForeColor=Color.LightSteelBlue});
+            customMedia=new RadioButton{Text="Custom video / GIF / picture",AutoSize=true,ForeColor=Color.White};layoutPanel.Controls.Add(customMedia);
+            customMedia.Click+=(s,e)=>{if(!applying){DialogResult=DialogResult.Retry;Close();}else customMedia.Checked=false;};
+            header.Controls.Add(new Label{Text="Seconds per slide",Left=840,Top=22,Width=140,Height=25});
+            slide=new NumericUpDown{Left=980,Top=19,Width=75,DecimalPlaces=2,Increment=.05m,Minimum=.5m,Maximum=1,Value=(decimal)config.SlideSeconds};header.Controls.Add(slide);
+            header.Controls.Add(new Label{Text="Choose a stats layout, or Custom video / GIF / picture to open the media editor with drag, zoom and Fit/Fill controls.",Left=22,Top=62,Width=1140,Height=27,ForeColor=Color.LightSteelBlue});
             var footer=new Panel{Dock=DockStyle.Bottom,Height=66};Controls.Add(footer);
             var save=Button("Export design",20,14,138,footer);var load=Button("Import design",170,14,138,footer);
             var activateButton=Button("Apply dashboard",957,14,205,footer);activateButton.Anchor=AnchorStyles.Right|AnchorStyles.Top;activateButton.BackColor=Color.Turquoise;activateButton.ForeColor=Color.Black;
@@ -97,5 +100,6 @@ namespace OmenLCDControl {
             }
         }
         internal void RenderSmoke(string path){Show();var wait=Stopwatch.StartNew();while(wait.ElapsedMilliseconds<1800){Application.DoEvents();System.Threading.Thread.Sleep(20);}ticks=9;TickPreview();Application.DoEvents();using(var image=new Bitmap(Width,Height)){DrawToBitmap(image,new Rectangle(0,0,Width,Height));image.Save(path,System.Drawing.Imaging.ImageFormat.Png);}Close();}
+        internal void SelectCustomMediaForSmoke(){customMedia.PerformClick();}
     }
 }

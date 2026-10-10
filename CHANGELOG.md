@@ -1,5 +1,12 @@
 # Changelog
 
+## 0.3.2 — 2026-10-10
+
+- Added Custom video / GIF / picture as a fourth choice alongside Rings, Bars and Spotlight.
+- Renamed the editor's Stats studio button to Display modes for clearer navigation.
+- The custom media choice opens the existing drag/zoom and Fit/Fill editor; applying media replaces stats playback.
+- Updated README, mode guide, screenshots and portable/source packages; verified fourth-option navigation and GIF/video conversion.
+
 ## 0.3.1 — 2026-10-10
 
 - Renamed the app, executable, project and release packages to Omen LCD control.

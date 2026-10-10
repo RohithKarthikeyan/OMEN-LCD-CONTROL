@@ -3,5 +3,5 @@ using System.Reflection;
 [assembly: AssemblyTitle("Omen LCD control")]
 [assembly: AssemblyDescription("Community cooler screen editor for compatible HP OMEN desktops")]
 [assembly: AssemblyProduct("Omen LCD control")]
-[assembly: AssemblyVersion("0.3.1.0")]
-[assembly: AssemblyFileVersion("0.3.1.0")]
+[assembly: AssemblyVersion("0.3.2.0")]
+[assembly: AssemblyFileVersion("0.3.2.0")]

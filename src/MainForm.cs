@@ -84,7 +84,7 @@ namespace OmenLCDControl {
             cancel = AddButton(sidebar, "Cancel conversion", 476, 288, false); cancel.Visible = false;
 
             var tools = new FlowLayoutPanel { Dock = DockStyle.Bottom, Height = 88, Padding = new Padding(6, 10, 6, 0), BackColor = BackColor };
-            stats = new Button { Text = "Stats studio", Width = 150, Height = 36 }; StyleButton(stats, false); tools.Controls.Add(stats);
+            stats = new Button { Text = "Display modes", Width = 150, Height = 36 }; StyleButton(stats, false); tools.Controls.Add(stats);
             restore = new Button { Text = "Restore OMEN", Width = 150, Height = 36 }; StyleButton(restore, false); tools.Controls.Add(restore);
             var hide = new Button { Text = "Hide to tray", Width = 135, Height = 36 }; StyleButton(hide, false); tools.Controls.Add(hide);
             startInTray = new CheckBox { Text = "Open in tray next time", AutoSize = true, Margin = new Padding(12, 10, 3, 3), Checked = state.StartInTray }; tools.Controls.Add(startInTray);
@@ -197,7 +197,7 @@ namespace OmenLCDControl {
         private void DrawStats() {
             using (var image = DashboardRenderer.Render(state.Dashboard, dashboard.Hub.Snapshot(), dashboardClock.Elapsed.TotalSeconds, DateTime.UtcNow)) DashboardRenderer.SaveAtomic(image, livePath);
         }
-        private void ShowDashboard() {
+        private void ShowDashboard(bool selectMediaForSmoke = false) {
             if (busy) return;
             if (dashboard == null) dashboard = new DashboardRuntime();
             using (var designer = new DashboardForm(dashboard, state.Dashboard, async config => {
@@ -205,7 +205,13 @@ namespace OmenLCDControl {
                 var previous = state.Dashboard;
                 try { state.Dashboard = config; await StartStats(); Save(); }
                 catch { state.Dashboard = previous; throw; }
-            })) designer.ShowDialog(this);
+            })) {
+                if (selectMediaForSmoke) designer.Shown += (s,e) => designer.BeginInvoke((Action)designer.SelectCustomMediaForSmoke);
+                if (designer.ShowDialog(this) == DialogResult.Retry) {
+                    ShowEditor(); open.Focus();
+                    SetStatus("Custom media mode: choose a GIF, video, or picture, adjust its position and zoom, then click Apply to cooler screen.");
+                }
+            }
         }
         private async Task StartStats() {
             if (busy) return; SetBusy(true);
@@ -222,6 +228,8 @@ namespace OmenLCDControl {
             Show(); Application.DoEvents();
             Close(); if (IsDisposed || Visible) throw new Exception("Close-to-tray smoke test failed.");
             Show(); Application.DoEvents();
+            ShowDashboard(true);
+            if (!Visible || !open.Enabled || !status.Text.StartsWith("Custom media mode:")) throw new Exception("Custom media display-mode navigation failed.");
             using (var bitmap = new Bitmap(Width, Height)) { DrawToBitmap(bitmap, new Rectangle(0, 0, Width, Height)); bitmap.Save(path, ImageFormat.Png); }
             exiting = true; Close();
         }
