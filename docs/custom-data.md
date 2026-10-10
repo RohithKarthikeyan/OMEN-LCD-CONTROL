@@ -1,6 +1,6 @@
 # Stream custom data
 
-Open **Display modes** to start the stats studio and local API. It stays active while the app is in the tray. The endpoint is `http://127.0.0.1:47845/v1/metrics`. Click **Copy token** in the designer. The same token is stored in `%LOCALAPPDATA%\OmenScreen\api-token.txt`; do not publish it.
+The local API starts with the app and stays active while it is in the tray. The endpoint is `http://127.0.0.1:47845/v1/metrics`. Choose a stats layout and click **Copy token** in the main window. The same token is stored in `%LOCALAPPDATA%\OmenScreen\api-token.txt`; do not publish it.
 
 Send JSON with an `Authorization: Bearer YOUR_TOKEN` header:
 

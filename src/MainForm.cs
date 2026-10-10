@@ -23,6 +23,7 @@ namespace OmenLCDControl {
         private readonly CheckBox startInTray;
         private readonly System.Windows.Forms.Timer statsTimer;
         private DashboardRuntime dashboard;
+        private readonly DashboardForm studio;
         private readonly Stopwatch dashboardClock = Stopwatch.StartNew();
         private CancellationTokenSource operation;
         private string source;
@@ -43,7 +44,7 @@ namespace OmenLCDControl {
             state.Transform.Fps = Math.Max(1, Math.Min(30, state.Transform.Fps));
             preview.Transform = state.Transform;
             Text = "Omen LCD control"; Font = new Font("Segoe UI", 10); ForeColor = Color.FromArgb(231, 237, 246);
-            BackColor = Color.FromArgb(14, 18, 26); ClientSize = new Size(1030, 700); MinimumSize = new Size(950, 700);
+            BackColor = Color.FromArgb(14, 18, 26); ClientSize = new Size(1190, 900); MinimumSize = new Size(1130, 820);
             AutoScaleMode = AutoScaleMode.Dpi; StartPosition = FormStartPosition.CenterScreen;
             Icon = CreateIcon(); AllowDrop = true;
 
@@ -55,7 +56,7 @@ namespace OmenLCDControl {
             Controls.Add(status);
             var content = new Panel { Dock = DockStyle.Fill, Padding = new Padding(20, 6, 20, 16) };
             Controls.Add(content); content.BringToFront();
-            var sidebar = new Panel { Dock = DockStyle.Right, Width = 320, BackColor = PanelColor, Padding = new Padding(16) };
+            var sidebar = new Panel { AutoScroll = true, AutoScrollMinSize = new Size(304, 515), Dock = DockStyle.Right, Width = 320, BackColor = PanelColor, Padding = new Padding(16) };
             content.Controls.Add(sidebar);
             var canvasArea = new Panel { Dock = DockStyle.Fill, Padding = new Padding(0, 0, 18, 0) };
             content.Controls.Add(canvasArea); canvasArea.BringToFront();
@@ -79,16 +80,25 @@ namespace OmenLCDControl {
             AddLabel(sidebar, "Horizontal", 309, false).Width = 130; var yl = AddLabel(sidebar, "Vertical", 309, false); yl.Left = 166; yl.Width = 130;
             x = AddNumber(sidebar, 16, 337, -480, 480, state.Transform.OffsetX); y = AddNumber(sidebar, 166, 337, -480, 480, state.Transform.OffsetY);
             x.AccessibleName = "Horizontal offset in screen pixels"; y.AccessibleName = "Vertical offset in screen pixels";
-            AddLabel(sidebar, "Playback FPS", 383, false); fps = AddNumber(sidebar, 166, 379, 1, 30, state.Transform.Fps); fps.AccessibleName = "Playback frame rate";
+            AddLabel(sidebar, "Playback FPS", 383, false).Width = 140; fps = AddNumber(sidebar, 166, 379, 1, 30, state.Transform.Fps); fps.AccessibleName = "Playback frame rate";
             apply = AddButton(sidebar, "Apply to cooler screen", 427, 288, true);
             cancel = AddButton(sidebar, "Cancel conversion", 476, 288, false); cancel.Visible = false;
 
-            var tools = new FlowLayoutPanel { Dock = DockStyle.Bottom, Height = 88, Padding = new Padding(6, 10, 6, 0), BackColor = BackColor };
+            var tools = new FlowLayoutPanel { Dock = DockStyle.Bottom, Height = 52, Padding = new Padding(6, 10, 6, 0), BackColor = BackColor };
             stats = new Button { Text = "Display modes", Width = 150, Height = 36 }; StyleButton(stats, false); tools.Controls.Add(stats);
             restore = new Button { Text = "Restore OMEN", Width = 150, Height = 36 }; StyleButton(restore, false); tools.Controls.Add(restore);
             var hide = new Button { Text = "Hide to tray", Width = 135, Height = 36 }; StyleButton(hide, false); tools.Controls.Add(hide);
             startInTray = new CheckBox { Text = "Open in tray next time", AutoSize = true, Margin = new Padding(12, 10, 3, 3), Checked = state.StartInTray }; tools.Controls.Add(startInTray);
-            canvasArea.Controls.Add(tools); preview.BringToFront();
+            Controls.Add(tools); preview.BringToFront();
+            header.Dispose();
+            dashboard = new DashboardRuntime();
+            studio = new DashboardForm(dashboard, state.Dashboard, async config => {
+                if (busy) throw new InvalidOperationException("Wait for the current operation to finish.");
+                var previous = state.Dashboard;
+                try { state.Dashboard = config; await StartStats(); Save(); }
+                catch { state.Dashboard = previous; throw; }
+            }, content) { Dock = DockStyle.Fill };
+            Controls.Add(studio); studio.BringToFront();
 
             var menu = new ContextMenuStrip(); menu.Items.Add("Open editor", null, (s, e) => ShowEditor());
             menu.Items.Add("Restore OMEN", null, async (s, e) => await Restore()); menu.Items.Add(new ToolStripSeparator());
@@ -182,7 +192,7 @@ namespace OmenLCDControl {
             finally { operation.Dispose(); operation = null; SetBusy(false); }
         }
         private async Task Restore() {
-            if (busy) return; SetBusy(true);
+            if (busy || studio.IsApplying) return; SetBusy(true);
             try { await statsWork; await Task.Run(() => backend.Restore()); statsTimer.Stop(); tray.Text = "Omen LCD control"; SetStatus("Original OMEN settings restored."); }
             catch (Exception e) { Error(e); } finally { SetBusy(false); }
         }
@@ -197,24 +207,9 @@ namespace OmenLCDControl {
         private void DrawStats() {
             using (var image = DashboardRenderer.Render(state.Dashboard, dashboard.Hub.Snapshot(), dashboardClock.Elapsed.TotalSeconds, DateTime.UtcNow)) DashboardRenderer.SaveAtomic(image, livePath);
         }
-        private void ShowDashboard(bool selectMediaForSmoke = false) {
-            if (busy) return;
-            if (dashboard == null) dashboard = new DashboardRuntime();
-            using (var designer = new DashboardForm(dashboard, state.Dashboard, async config => {
-                if (busy) throw new InvalidOperationException("Wait for the current operation to finish.");
-                var previous = state.Dashboard;
-                try { state.Dashboard = config; await StartStats(); Save(); }
-                catch { state.Dashboard = previous; throw; }
-            })) {
-                if (selectMediaForSmoke) designer.Shown += (s,e) => designer.BeginInvoke((Action)designer.SelectCustomMediaForSmoke);
-                if (designer.ShowDialog(this) == DialogResult.Retry) {
-                    ShowEditor(); open.Focus();
-                    SetStatus("Custom media mode: choose a GIF, video, or picture, adjust its position and zoom, then click Apply to cooler screen.");
-                }
-            }
-        }
+        private void ShowDashboard() { if (!busy) { ShowEditor(); studio.SelectStats(); } }
         private async Task StartStats() {
-            if (busy) return; SetBusy(true);
+            if (busy) throw new InvalidOperationException("Wait for the current operation to finish."); SetBusy(true);
             try { await statsWork; dashboardClock.Restart(); await Task.Run(() => { DrawStats(); backend.Apply(livePath, 25); }); statsTimer.Start(); tray.Text = "Omen LCD control - dashboard active"; SetStatus("Custom dashboard is on the cooler. Metrics and custom data keep updating in the tray."); }
             finally { SetBusy(false); }
         }
@@ -223,13 +218,18 @@ namespace OmenLCDControl {
             try { statsWork = Task.Run(() => DrawStats()); await statsWork; } catch (Exception e) { statsTimer.Stop(); AppState.Log(e); SetStatus("Stats stopped: " + e.Message); }
             finally { statsUpdating = false; }
         }
-        internal void RenderSmoke(string path, string sample) {
+        internal void RenderSmoke(string path, string sample, bool statsView = false) {
             if (sample != null && File.Exists(sample)) { using (var image = Image.FromFile(sample)) preview.SetMedia((Image)image.Clone()); fileLabel.Text = Path.GetFileName(sample); }
             Show(); Application.DoEvents();
             Close(); if (IsDisposed || Visible) throw new Exception("Close-to-tray smoke test failed.");
             Show(); Application.DoEvents();
-            ShowDashboard(true);
-            if (!Visible || !open.Enabled || !status.Text.StartsWith("Custom media mode:")) throw new Exception("Custom media display-mode navigation failed.");
+            studio.ShowMedia(); Application.DoEvents();
+            if (!Visible || !open.Enabled || open.FindForm() != this || studio.FindForm() != this) throw new Exception("Media editor is not in the main window.");
+            if (fps.Bottom > fps.Parent.ClientSize.Height || !fps.Visible) throw new Exception("Playback FPS is outside the visible media controls.");
+            var originalSize=Size; Size=MinimumSize; Application.DoEvents();
+            if (fps.Bottom > fps.Parent.ClientSize.Height || !fps.Visible || fps.Right > fps.Parent.ClientSize.Width) throw new Exception("Playback FPS is clipped at minimum window size.");
+            Size=originalSize; Application.DoEvents();
+            if (statsView) { studio.SelectStats(); var wait = Stopwatch.StartNew(); while(wait.ElapsedMilliseconds < 1800) { Application.DoEvents(); Thread.Sleep(20); } }
             using (var bitmap = new Bitmap(Width, Height)) { DrawToBitmap(bitmap, new Rectangle(0, 0, Width, Height)); bitmap.Save(path, ImageFormat.Png); }
             exiting = true; Close();
         }

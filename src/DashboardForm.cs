@@ -9,7 +9,7 @@ using System.Web.Script.Serialization;
 using System.Windows.Forms;
 
 namespace OmenLCDControl {
-    public sealed class DashboardForm : Form {
+    public sealed class DashboardForm : UserControl {
         private readonly DashboardRuntime runtime;
         private DashboardConfig config;
         private readonly Func<DashboardConfig,Task> activate;
@@ -21,28 +21,31 @@ namespace OmenLCDControl {
         private readonly Label information;
         private readonly ListBox readings;
         private readonly RadioButton customMedia;
+        private readonly Control mediaEditor;
+        private readonly Panel body, footer;
+        internal bool IsApplying { get { return applying; } }
         private readonly Timer timer=new Timer{Interval=100};
         private readonly Stopwatch clock=Stopwatch.StartNew();
         private bool applying;
         private int ticks;
-        public DashboardForm(DashboardRuntime service,DashboardConfig settings,Func<DashboardConfig,Task> apply){
-            runtime=service;activate=apply;var json=new JavaScriptSerializer();config=json.Deserialize<DashboardConfig>(json.Serialize(settings));
+        public DashboardForm(DashboardRuntime service,DashboardConfig settings,Func<DashboardConfig,Task> apply,Control mediaContent=null){
+            runtime=service;activate=apply;mediaEditor=mediaContent;var json=new JavaScriptSerializer();config=json.Deserialize<DashboardConfig>(json.Serialize(settings));
             Text="Omen LCD control - Dashboard designer";Font=new Font("Segoe UI",10);BackColor=Color.FromArgb(14,18,26);ForeColor=Color.White;
-            ClientSize=new Size(1190,790);MinimumSize=new Size(1100,820);StartPosition=FormStartPosition.CenterParent;
+            Size=new Size(1190,790);AutoScaleMode=AutoScaleMode.Dpi;
             var header=new Panel{Dock=DockStyle.Top,Height=96,Padding=new Padding(18)};Controls.Add(header);
             header.Controls.Add(new Label{Text="DISPLAY MODE",Left=20,Top=12,Width=220,Height=35,Font=new Font("Segoe UI",20,FontStyle.Bold),ForeColor=Color.Turquoise});
             selectedLayout=config.Layout;
             var layoutPanel=new FlowLayoutPanel{Left=254,Top=19,Width=575,Height=32};header.Controls.Add(layoutPanel);
-            foreach(string name in new[]{"Rings","Bars","Spotlight"}){var choice=new RadioButton{Text=name,AutoSize=true,Checked=name==selectedLayout,ForeColor=Color.White};choice.CheckedChanged+=(s,e)=>{if(choice.Checked)selectedLayout=choice.Text;};layoutChoices.Add(choice);layoutPanel.Controls.Add(choice);}
+            foreach(string name in new[]{"Rings","Bars","Spotlight"}){var choice=new RadioButton{Text=name,AutoSize=true,Checked=name==selectedLayout,ForeColor=Color.White};choice.CheckedChanged+=(s,e)=>{if(choice.Checked){selectedLayout=choice.Text;ShowStats();}};layoutChoices.Add(choice);layoutPanel.Controls.Add(choice);}
             customMedia=new RadioButton{Text="Custom video / GIF / picture",AutoSize=true,ForeColor=Color.White};layoutPanel.Controls.Add(customMedia);
-            customMedia.Click+=(s,e)=>{if(!applying){DialogResult=DialogResult.Retry;Close();}else customMedia.Checked=false;};
+            customMedia.CheckedChanged+=(s,e)=>{if(customMedia.Checked)ShowMedia();};
             header.Controls.Add(new Label{Text="Seconds per slide",Left=840,Top=22,Width=140,Height=25});
             slide=new NumericUpDown{Left=980,Top=19,Width=75,DecimalPlaces=2,Increment=.05m,Minimum=.5m,Maximum=1,Value=(decimal)config.SlideSeconds};header.Controls.Add(slide);
-            header.Controls.Add(new Label{Text="Choose a stats layout, or Custom video / GIF / picture to open the media editor with drag, zoom and Fit/Fill controls.",Left=22,Top=62,Width=1140,Height=27,ForeColor=Color.LightSteelBlue});
-            var footer=new Panel{Dock=DockStyle.Bottom,Height=66};Controls.Add(footer);
+            header.Controls.Add(new Label{Text="Choose a stats layout, or Custom video / GIF / picture to edit media here with drag, zoom and Fit/Fill controls.",Left=22,Top=62,Width=1140,Height=27,ForeColor=Color.LightSteelBlue});
+            footer=new Panel{Dock=DockStyle.Bottom,Height=66};Controls.Add(footer);
             var save=Button("Export design",20,14,138,footer);var load=Button("Import design",170,14,138,footer);
             var activateButton=Button("Apply dashboard",957,14,205,footer);activateButton.Anchor=AnchorStyles.Right|AnchorStyles.Top;activateButton.BackColor=Color.Turquoise;activateButton.ForeColor=Color.Black;
-            var body=new Panel{Dock=DockStyle.Fill,Padding=new Padding(16,0,16,0)};Controls.Add(body);body.BringToFront();
+            body=new Panel{Dock=DockStyle.Fill,AutoScroll=true,AutoScrollMinSize=new Size(1100,610),Padding=new Padding(16,0,16,0)};Controls.Add(body);body.BringToFront();
             var left=new Panel{Dock=DockStyle.Left,Width=490};body.Controls.Add(left);
             picture=new PictureBox{Left=5,Top=4,Width=480,Height=480,SizeMode=PictureBoxSizeMode.Zoom};left.Controls.Add(picture);
             information=new Label{Left=12,Top=490,Width=465,Height=112,ForeColor=Color.LightSteelBlue};left.Controls.Add(information);
@@ -71,7 +74,8 @@ namespace OmenLCDControl {
             save.Click+=(s,e)=>{try{ReadGrid();using(var dialog=new SaveFileDialog{Filter="Dashboard JSON|*.json",FileName="my-dashboard.json"})if(dialog.ShowDialog(this)==DialogResult.OK)File.WriteAllText(dialog.FileName,json.Serialize(config));}catch(Exception ex){MessageBox.Show(this,ex.Message);}};
             load.Click+=(s,e)=>{try{using(var dialog=new OpenFileDialog{Filter="Dashboard JSON|*.json"})if(dialog.ShowDialog(this)==DialogResult.OK){if(new FileInfo(dialog.FileName).Length>65536)throw new ArgumentException("Design file is too large.");var imported=json.Deserialize<DashboardConfig>(File.ReadAllText(dialog.FileName));imported.Validate();config=imported;selectedLayout=config.Layout;foreach(var choice in layoutChoices)choice.Checked=choice.Text==selectedLayout;slide.Value=(decimal)config.SlideSeconds;FillGrid();}}catch(Exception ex){MessageBox.Show(this,ex.Message);}};
             activateButton.Click+=async(s,e)=>{if(applying)return;try{ReadGrid();applying=true;activateButton.Enabled=false;await activate(json.Deserialize<DashboardConfig>(json.Serialize(config)));information.Text="Dashboard is live on your cooler. You can close this designer; it keeps running in the tray.";}catch(Exception ex){MessageBox.Show(this,ex.Message,"Dashboard could not apply");}finally{applying=false;activateButton.Enabled=true;}};
-            timer.Tick+=(s,e)=>TickPreview();timer.Start();FormClosing+=(s,e)=>{if(applying)e.Cancel=true;};FormClosed+=(s,e)=>{timer.Dispose();if(picture.Image!=null)picture.Image.Dispose();};
+            if(mediaEditor!=null){mediaEditor.Dock=DockStyle.Fill;Controls.Add(mediaEditor);mediaEditor.Visible=false;}
+            timer.Tick+=(s,e)=>TickPreview();timer.Start();Disposed+=(s,e)=>{timer.Dispose();if(picture.Image!=null)picture.Image.Dispose();};
         }
         private Button Button(string text,int left,int top,int width,Control parent){var b=new Button{Text=text,Left=left,Top=top,Width=width,Height=36,BackColor=Color.FromArgb(35,46,63),ForeColor=Color.White,FlatStyle=FlatStyle.Flat};parent.Controls.Add(b);return b;}
         private void RefreshMetricChoices(){
@@ -99,7 +103,8 @@ namespace OmenLCDControl {
                 if(dialog.ShowDialog(this)==DialogResult.OK){try{if(!MetricHub.ValidId(id.Text)||!id.Text.StartsWith("custom.")||label.Text.Length>48||unit.Text.Length>16)throw new ArgumentException("Use a valid custom. ID, label <=48 characters and unit <=16 characters.");runtime.Hub.Register(id.Text,label.Text,unit.Text,"Custom API");ReadGrid();RefreshMetricChoices();}catch(Exception e){MessageBox.Show(this,e.Message);}}
             }
         }
-        internal void RenderSmoke(string path){Show();var wait=Stopwatch.StartNew();while(wait.ElapsedMilliseconds<1800){Application.DoEvents();System.Threading.Thread.Sleep(20);}ticks=9;TickPreview();Application.DoEvents();using(var image=new Bitmap(Width,Height)){DrawToBitmap(image,new Rectangle(0,0,Width,Height));image.Save(path,System.Drawing.Imaging.ImageFormat.Png);}Close();}
-        internal void SelectCustomMediaForSmoke(){customMedia.PerformClick();}
+        private void ShowStats(){if(body==null)return;if(mediaEditor!=null)mediaEditor.Visible=false;slide.Enabled=selectedLayout=="Spotlight";body.Visible=true;footer.Visible=true;body.BringToFront();}
+        internal void ShowMedia(){if(body==null||mediaEditor==null)return;customMedia.Checked=true;slide.Enabled=false;body.Visible=false;footer.Visible=false;mediaEditor.Visible=true;mediaEditor.BringToFront();}
+        internal void SelectStats(){layoutChoices.Find(choice=>choice.Text==selectedLayout).Checked=true;ShowStats();}
     }
 }

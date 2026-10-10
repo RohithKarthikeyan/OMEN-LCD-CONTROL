@@ -12,7 +12,7 @@ Run `OmenLCDControl.exe` from the portable release folder. No installation or ad
 
 If you still have the earlier PowerShell controller open, restore and close it before using this app.
 
-1. Click **Display modes** to choose **Rings**, **Bars**, **Spotlight**, or **Custom video / GIF / picture**. The fourth option opens the media editor. Click **Choose GIF, video, or image**, or drop a file into the editor.
+1. Choose **Rings**, **Bars**, **Spotlight**, or **Custom video / GIF / picture** across the top of the main window. All four modes share that window. In custom media mode, click **Choose GIF, video, or image**, or drop a file into the editor.
 2. Drag it inside the round preview. Scroll or use the slider to resize it. Fit and Fill provide starting layouts; horizontal and vertical controls allow precise positioning.
 3. Click **Apply to cooler screen**. Conversion runs in the background and can be cancelled before the display settings change.
 4. Close the window or click **Hide to tray** to keep it running. Double-click the teal ring in the Windows system tray to reopen it.
@@ -22,7 +22,7 @@ GIF previews animate. Video previews show a poster frame; the full video loops o
 
 **Display modes** presents all four options together: Rings, Bars, Spotlight (one metric per slide, 0.5–1 second), and Custom video / GIF / picture. For stats, assign six slots, set colors and graph ranges, disable fields, and import/export designs. CPU/RAM usage, CPU speed, GPU usage/temperature/clock/VRAM, local time, and custom numeric/text data are available. CPU temperature requires a running LibreHardwareMonitor sensor provider. NVIDIA GPU metrics use the installed NVIDIA tools.
 
-Custom media supports animated GIFs, videos (MP4, MKV, AVI, MOV, WebM), and still pictures (JPG, PNG, BMP). Drag and zoom, use Fit/Fill, then **Apply to cooler screen**. Selecting an option alone does not replace current playback; the selected media or stats take over when you click its Apply button. Return to **Display modes** whenever you want to switch back to stats.
+Custom media supports animated GIFs, videos (MP4, MKV, AVI, MOV, WebM), and still pictures (JPG, PNG, BMP). Drag and zoom, use Fit/Fill, set **Playback FPS** in the right sidebar, then **Apply to cooler screen**. Selecting an option alone does not replace current playback; the selected media or stats take over when you click its Apply button. Switch back to any stats layout using the same mode selector. Media controls have a scrollable sidebar for smaller windows, with Playback FPS fully visible at the supported minimum window size.
 
 Read [the dashboard guide](docs/dashboards.md) and [custom data API guide](docs/custom-data.md). Game FPS and other custom values must be supplied by your own telemetry integration. The API runs on loopback with a bearer token while Stats studio or a dashboard session is active. Closing the windows keeps it running in the tray.
 
@@ -89,7 +89,7 @@ Unit checks cover composition geometry, actual still-image pixels, unknown JSON 
 
 ## Project status
 
-Version **0.3.2**, early community prototype. The portable executable is unsigned. The app has been tested on one PC, rather than across the OMEN product range.
+Version **0.3.3**, early community prototype. The portable executable is unsigned. The app has been tested on one PC, rather than across the OMEN product range.
 
 Dashboard validation covers numeric/text ingestion, stale readings, protected system metrics, authenticated HTTP, graph ranges, all three renderers and slide advancement. Live Windows/NVIDIA readings and changing source frames were checked on the test PC, with exact HP configuration restoration. This HP transport does not expose refreshed Image-mode output files, so physical LCD updates still need user verification. The Image-mode timer runs approximately twice per second; fast Spotlight transitions will be less smooth than the preview.
 

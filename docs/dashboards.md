@@ -1,6 +1,6 @@
 # Design a stats screen
 
-Open **Display modes**, choose a stats layout, assign metrics, and click **Apply dashboard**. The fourth option, **Custom video / GIF / picture**, opens the media editor, where you can choose a file, drag/zoom, use Fit/Fill, and click **Apply to cooler screen**. Close the designer and editor to continue in the tray. Applying a media file replaces the dashboard. Return to Display modes to switch back to stats. Restore OMEN returns the saved HP settings.
+Choose a stats layout across the top of the main window, assign metrics, and click **Apply dashboard**. The fourth option, **Custom video / GIF / picture**, switches that same window to the media editor, where you can choose a file, drag/zoom, use Fit/Fill, set Playback FPS, and click **Apply to cooler screen**. Close the window to continue in the tray. Applying a media file replaces the dashboard. Choose a stats layout to switch back in place. Restore OMEN returns the saved HP settings.
 
 * **Rings:** four concentric gauges with matching legends, plus two center fields.
 * **Bars:** four horizontal gauges, plus two footer fields.

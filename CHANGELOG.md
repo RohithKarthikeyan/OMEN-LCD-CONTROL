@@ -1,5 +1,13 @@
 # Changelog
 
+## 0.3.3 — 2026-10-10
+
+- Integrated stats and GIF/video/picture editing into a single main window; mode selection no longer opens or swaps between windows.
+- Kept restore, tray and startup controls available beneath every mode.
+- Fixed overlapping Playback FPS label/input and added a scrollable media sidebar.
+- Verified media mode stays in the main window and FPS remains visible at default and minimum supported window sizes.
+- Refreshed guides, screenshots and portable/source releases.
+
 ## 0.3.2 — 2026-10-10
 
 - Added Custom video / GIF / picture as a fourth choice alongside Rings, Bars and Spotlight.

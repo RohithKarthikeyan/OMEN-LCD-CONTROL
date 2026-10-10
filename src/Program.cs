@@ -12,7 +12,7 @@ namespace OmenLCDControl {
             if (args.Length >= 2 && args[0] == "--self-test") return SelfTests.Run(args[1]);
             if (args.Length >= 2 && args[0] == "--render-dashboards") { DashboardTests.RenderExamples(args[1]); return 0; }
             if (args.Length >= 2 && args[0] == "--dashboard-smoke") {
-                using (var runtime = new DashboardRuntime()) using (var form = new DashboardForm(runtime,new DashboardConfig(),config=>System.Threading.Tasks.Task.FromResult(0))) form.RenderSmoke(args[1]);
+                using (var form = new MainForm()) form.RenderSmoke(args[1], null, true);
                 return 0;
             }
             if (args.Length >= 2 && args[0] == "--smoke-test") {
